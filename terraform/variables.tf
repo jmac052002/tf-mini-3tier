@@ -24,16 +24,16 @@ variable "instance_type" {
 }
 
 variable "asg_min" {
-  type        = number
-  default     = 1
+  type    = number
+  default = 1
 }
 
 variable "asg_max" {
-  type        = number
-  default     = 2
+  type    = number
+  default = 2
 }
 
 variable "asg_desired" {
-  type        = number
-  default     = 1
+  type    = number
+  default = 1
 }

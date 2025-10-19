@@ -29,7 +29,7 @@ resource "aws_vpc" "main" {
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
-  tags = { Name = "${var.project_name}-igw" }
+  tags   = { Name = "${var.project_name}-igw" }
 }
 
 # Public subnets (2 AZ)
@@ -39,7 +39,7 @@ resource "aws_subnet" "public" {
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
   map_public_ip_on_launch = true
   availability_zone       = data.aws_availability_zones.available.names[count.index]
-  tags = { Name = "${var.project_name}-public-${count.index}" }
+  tags                    = { Name = "${var.project_name}-public-${count.index}" }
 }
 
 # Private subnets (2 AZ)
@@ -48,20 +48,20 @@ resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
   availability_zone = data.aws_availability_zones.available.names[count.index]
-  tags = { Name = "${var.project_name}-private-${count.index}" }
+  tags              = { Name = "${var.project_name}-private-${count.index}" }
 }
 
 # Single NAT for cost
 resource "aws_eip" "nat" {
   domain = "vpc"
-  tags = { Name = "${var.project_name}-nat-eip" }
+  tags   = { Name = "${var.project_name}-nat-eip" }
 }
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
-  tags = { Name = "${var.project_name}-nat" }
-  depends_on = [aws_internet_gateway.igw]
+  tags          = { Name = "${var.project_name}-nat" }
+  depends_on    = [aws_internet_gateway.igw]
 }
 
 # Route tables
@@ -125,11 +125,11 @@ resource "aws_security_group" "app_sg" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description                = "HTTP from ALB"
-    from_port                  = 80
-    to_port                    = 80
-    protocol                   = "tcp"
-    security_groups            = [aws_security_group.alb_sg.id]
+    description     = "HTTP from ALB"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
   }
 
   egress {
@@ -149,7 +149,7 @@ resource "aws_lb" "alb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
   subnets            = [for s in aws_subnet.public : s.id]
-  tags = { Name = "${var.project_name}-alb" }
+  tags               = { Name = "${var.project_name}-alb" }
 }
 
 resource "aws_lb_target_group" "tg" {
@@ -187,9 +187,9 @@ resource "aws_iam_role" "ec2_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect = "Allow",
+      Effect    = "Allow",
       Principal = { Service = "ec2.amazonaws.com" },
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
