@@ -11,12 +11,12 @@ jobs:
   terraform:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
+      id-token: write   # REQUIRED for GitHub OIDC
       contents: read
 
     env:
       AWS_REGION: us-east-1
-      # AWS_ROLE_TO_ASSUME: arn:aws:iam::123456789012:role/github-oidc-terraform
+      AWS_ROLE_TO_ASSUME: arn:aws:iam::584996267165:role/github-oidc-terraform-plan
 
     steps:
       - name: Checkout
@@ -37,18 +37,13 @@ jobs:
         working-directory: ./terraform
         run: terraform validate
 
+      # Get temporary AWS creds via OIDC
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Terraform Plan
         working-directory: ./terraform
         run: terraform plan -input=false
-
-      # - name: Configure AWS Credentials (OIDC)
-      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-      #     aws-region: ${{ env.AWS_REGION }}
-
-      # - name: Terraform Apply
-      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      #   working-directory: ./terraform
-      #   run: terraform apply -auto-approve -input=false
