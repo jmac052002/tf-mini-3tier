@@ -1,0 +1,26 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Python (just in case)
+__pycache__/
+*.pyc
+.venv/
+ENV/
+env/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

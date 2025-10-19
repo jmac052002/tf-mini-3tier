@@ -1,0 +1,79 @@
+#!/bin/bash
+set -euxo pipefail
+
+PROJECT_ROOT="/opt/portfolio"
+APP_DIR="${PROJECT_ROOT}/app"
+PY_ENV="${PROJECT_ROOT}/venv"
+
+# These run on the EC2 instance (Amazon Linux 2023)
+dnf -y update
+dnf -y install python3-pip python3-devel gcc git awscli
+
+# Create app directory structure
+mkdir -p "${APP_DIR}"
+python3 -m venv "${PY_ENV}"
+source "${PY_ENV}/bin/activate"
+
+# Write application files from heredocs
+cat > "${APP_DIR}/app.py" << 'PYAPP'
+from flask import Flask, jsonify
+import os
+
+app = Flask(__name__)
+
+MESSAGE = os.environ.get("APP_MESSAGE", "Hello from tf-mini-3tier!")
+
+@app.get("/")
+def index():
+    return f"<h1>tf-mini-3tier</h1><p>{MESSAGE}</p>"
+
+@app.get("/health")
+def health():
+    return jsonify(status="ok", message=MESSAGE), 200
+PYAPP
+
+cat > "${APP_DIR}/requirements.txt" << 'PYREQ'
+flask==3.0.3
+gunicorn==21.2.0
+PYREQ
+
+pip install --upgrade pip
+pip install -r "${APP_DIR}/requirements.txt"
+
+# Fetch APP_MESSAGE from SSM Parameter Store (no jq needed)
+PARAM_NAME="/tf-mini-3tier/app_message"
+if APP_MESSAGE=$(aws ssm get-parameter \
+      --name "$PARAM_NAME" \
+      --with-decryption \
+      --query 'Parameter.Value' \
+      --output text 2>/dev/null); then
+  if [ -n "$APP_MESSAGE" ] && [ "$APP_MESSAGE" != "None" ]; then
+    echo "APP_MESSAGE=$APP_MESSAGE" > /etc/sysconfig/tfmini
+  else
+    echo "APP_MESSAGE=Hello from tf-mini-3tier!" > /etc/sysconfig/tfmini
+  fi
+else
+  echo "APP_MESSAGE=Hello from tf-mini-3tier!" > /etc/sysconfig/tfmini
+fi
+
+# Systemd service for Gunicorn on port 80
+cat > /etc/systemd/system/tf-mini.service << 'UNIT'
+[Unit]
+Description=Gunicorn for tf-mini-3tier
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/sysconfig/tfmini
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/opt/portfolio/app
+ExecStart=/opt/portfolio/venv/bin/gunicorn -b 0.0.0.0:80 -w 2 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable tf-mini.service
+systemctl start tf-mini.service
