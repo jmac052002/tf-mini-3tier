@@ -1,3 +1,7 @@
+[![terraform](https://github.com/jmac052002/tf-mini-3tier/actions/workflows/terraform.yml/badge.svg)](https://github.com/jmac052002/tf-mini-3tier/actions/workflows/terraform.yml)
+
+**Demo:** http://tf-mini-3tier-alb-1115224741.us-east-1.elb.amazonaws.com/
+
 
 # Tiny 3‑Tier on AWS with Terraform (VPC → ALB → ASG)
 
